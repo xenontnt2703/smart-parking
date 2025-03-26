@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking - Đặt chỗ</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Đặt chỗ bãi đỗ xe</h1>
+    </header>
+    <section>
+        <h2>Chọn bãi xe</h2>
+        <select id="parking-lot">
+            <option value="A">Bãi đỗ A</option>
+            <option value="B">Bãi đỗ B</option>
+        </select>
+        <h2>Chọn vị trí đỗ cụ thể</h2>
+        <div id="parking-spots"></div>
+        <h2>Thời gian đặt</h2>
+        <input type="datetime-local" id="booking-time" required>
+        <h2>Thời gian trả</h2>
+        <input type="datetime-local" id="return-time" required>
+        <button onclick="saveBooking('pay')">Thanh toán ngay</button>
+        <button onclick="saveBooking('hold')">Giữ chỗ</button>
+    </section>
+    <script>
+        function saveBooking(action) {
+            const parkingLot = document.getElementById('parking-lot').value;
+            const bookingTime = document.getElementById('booking-time').value;
+            const returnTime = document.getElementById('return-time').value;
+
+            const bookingInfo = {
+                lot: parkingLot,
+                bookingTime: bookingTime,
+                returnTime: returnTime,
+                action: action,
+                date: new Date().toLocaleString()
+            };
+            localStorage.setItem('bookingInfo', JSON.stringify(bookingInfo));
+
+            if (action === 'pay') {
+                location.href = 'payment.html'; // Chuyển đến trang thanh toán
+            } else {
+                location.href = 'hold.html';
+            }
+        }
+    </script>
+</body>
+</html>

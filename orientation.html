@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking - Hướng dẫn</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Hướng dẫn vào bãi đỗ xe</h1>
+    </header>
+    <section>
+        <h2>Mã QR xác minh</h2>
+        <div id="verification-qr">
+            <img src="https://via.placeholder.com/150" alt="Mã QR xác minh">
+            <p>Quét mã QR này khi vào bãi đỗ xe để xác minh quyền vào bãi.</p>
+        </div>
+        <h2>Lịch sử giao dịch</h2>
+        <ul id="transaction-history"></ul>
+    </section>
+    <script>
+        // Hiển thị lịch sử giao dịch
+        const transactionHistory = document.getElementById('transaction-history');
+        const savedHistory = JSON.parse(localStorage.getItem('transactionHistory')) || [];
+
+        // Lấy thông tin thanh toán từ localStorage
+        const paymentInfo = JSON.parse(localStorage.getItem('paymentInfo'));
+        if (paymentInfo) {
+            const transactionItem = document.createElement('li');
+            transactionItem.textContent = `Mã đơn hàng: ${paymentInfo.orderId} - Chỗ đặt: ${paymentInfo.lot} - Thời gian đặt: ${paymentInfo.bookingTime} - Thời gian trả: ${paymentInfo.returnTime} - Số giờ: ${paymentInfo.hours} - Số tiền: ${paymentInfo.amount.toLocaleString()} VND`;
+            transactionHistory.appendChild(transactionItem);
+
+            // Lưu lại lịch sử giao dịch
+            savedHistory.push(transactionItem.textContent);
+            localStorage.setItem('transactionHistory', JSON.stringify(savedHistory));
+        }
+    </script>
+</body>
+</html>

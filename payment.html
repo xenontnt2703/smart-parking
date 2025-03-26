@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking - Thanh toán</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Thanh toán</h1>
+    </header>
+    <section>
+        <h2>Thông tin đơn hàng</h2>
+        <p><strong>Chỗ đặt:</strong> <span id="booking-lot"></span></p>
+        <p><strong>Thời gian đặt:</strong> <span id="booking-time"></span></p>
+        <p><strong>Thời gian trả:</strong> <span id="return-time"></span></p>
+        <p><strong>Số giờ đặt:</strong> <span id="booking-hours"></span> giờ</p>
+        <p><strong>Số tiền thanh toán:</strong> <span id="payment-amount"></span></p>
+        <p><strong>Mã đơn hàng:</strong> <span id="order-id"></span></p>
+
+        <h2>Mã QR thanh toán</h2>
+        <div id="payment-qr">
+            <img src="https://via.placeholder.com/150" alt="Mã QR thanh toán">
+            <p>Quét mã QR để chuyển tiền vào tài khoản của chủ bãi đỗ xe.</p>
+        </div>
+        <h2>Thông tin tài khoản</h2>
+        <p><strong>Tên chủ tài khoản:</strong> Nguyễn Văn A</p>
+        <p><strong>Số tài khoản:</strong> 123456789</p>
+        <p><strong>Ngân hàng:</strong> Vietcombank</p>
+        <button onclick="location.href='orientation.html'">Hoàn tất thanh toán</button>
+    </section>
+    <script>
+        // Lấy thông tin đặt chỗ từ localStorage
+        const bookingInfo = JSON.parse(localStorage.getItem('bookingInfo'));
+
+        if (bookingInfo) {
+            // Hiển thị thông tin đơn hàng
+            document.getElementById('booking-lot').textContent = bookingInfo.lot;
+            document.getElementById('booking-time').textContent = bookingInfo.bookingTime;
+            document.getElementById('return-time').textContent = bookingInfo.returnTime;
+
+            // Tính số giờ đặt chỗ
+            const bookingTime = new Date(bookingInfo.bookingTime);
+            const returnTime = new Date(bookingInfo.returnTime);
+            const hours = Math.ceil((returnTime - bookingTime) / (1000 * 60 * 60)); // Tính số giờ
+            document.getElementById('booking-hours').textContent = hours;
+
+            // Tính số tiền thanh toán (20,000đ/giờ)
+            const paymentAmount = hours * 20000; // 20,000đ/giờ
+            document.getElementById('payment-amount').textContent = `${paymentAmount.toLocaleString()} VND`;
+
+            // Tạo mã đơn hàng tự động
+            const orderId = `ORDER-${Math.floor(Math.random() * 1000000)}`;
+            document.getElementById('order-id').textContent = orderId;
+
+            // Lưu thông tin thanh toán vào localStorage
+            const paymentInfo = {
+                lot: bookingInfo.lot,
+                bookingTime: bookingInfo.bookingTime,
+                returnTime: bookingInfo.returnTime,
+                hours: hours,
+                amount: paymentAmount,
+                orderId: orderId
+            };
+            localStorage.setItem('paymentInfo', JSON.stringify(paymentInfo));
+        } else {
+            alert('Không có thông tin đặt chỗ. Vui lòng quay lại trang đặt chỗ.');
+            location.href = 'booking.html';
+        }
+    </script>
+</body>
+</html>
