@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gia hạn thẻ</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h2>Gia hạn thẻ RFID</h2>
+    <label for="duration">Chọn thời gian gia hạn:</label>
+    <select id="duration">
+      <option value="1">1 tháng - 1,000,000 VND</option>
+      <option value="3">3 tháng - 3,000,000 VND</option>
+      <option value="6">6 tháng - 6,000,000 VND</option>
+    </select>
+    <button id="renew">Thanh toán</button>
+    <div id="qr-container" style="display: none">
+      <h3>Quét mã QR để thanh toán</h3>
+      <img src="momo_qr_placeholder.png" alt="QR Code MoMo" />
+    </div>
+
+    <script type="module">
+      import { auth, database } from "./firebase-config.js";
+      import {
+        ref,
+        get,
+        update,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+      document.getElementById("renew").addEventListener("click", async () => {
+        const duration = parseInt(document.getElementById("duration").value);
+        const amount = duration * 1000000; // Giá tiền theo tháng
+
+        document.getElementById("qr-container").style.display = "block";
+        alert("Vui lòng quét mã QR để thanh toán " + amount + " VND");
+
+        setTimeout(async () => {
+          const user = auth.currentUser;
+          if (user) {
+            const userRef = ref(database, "users/" + user.uid);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists()) {
+              const userData = snapshot.val();
+              let currentExpiration = userData.expiration || Date.now();
+              let newExpiration =
+                currentExpiration + duration * 30 * 24 * 60 * 60 * 1000;
+
+              await update(userRef, {
+                expiration: newExpiration,
+                last_payment: { amount, date: Date.now() },
+              });
+              alert(
+                "Gia hạn thành công! Thời hạn mới: " +
+                  new Date(newExpiration).toLocaleDateString()
+              );
+              window.location.href = "dashboard.html";
+            }
+          }
+        }, 5000); // Giả lập thanh toán sau 5 giây
+      });
+    </script>
+  </body>
+</html>
