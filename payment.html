@@ -6,63 +6,99 @@
     <title>Smart Parking - Thanh toán</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <header>
-      <h1>Thanh toán</h1>
-    </header>
-    <section>
-      <h2>Thông tin đơn hàng</h2>
-      <p><strong>Chỗ đặt:</strong> <span id="booking-lot"></span></p>
-      <p><strong>Thời gian đặt:</strong> <span id="booking-time"></span></p>
-      <p><strong>Thời gian trả:</strong> <span id="return-time"></span></p>
-      <p><strong>Số giờ đặt:</strong> <span id="booking-hours"></span> giờ</p>
-      <p>
-        <strong>Số tiền thanh toán:</strong> <span id="payment-amount"></span>
-      </p>
-      <p><strong>Mã đơn hàng:</strong> <span id="order-id"></span></p>
+  <body class="payment-page">
+    <div class="payment-container">
+      <header class="payment-header">
+        <h1>Thanh toán</h1>
+      </header>
+      
+      <main class="payment-content">
+        <section class="order-info">
+          <h2 class="section-title">Thông tin đơn hàng</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Chỗ đặt:</span>
+              <span id="booking-lot" class="info-value"></span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Thời gian đặt:</span>
+              <span id="booking-time" class="info-value"></span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Thời gian trả:</span>
+              <span id="return-time" class="info-value"></span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Số giờ đặt:</span>
+              <span id="booking-hours" class="info-value">0 giờ</span>
+            </div>
+            <div class="info-item highlight">
+              <span class="info-label">Số tiền thanh toán:</span>
+              <span id="payment-amount" class="info-value">0 VND</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Mã đơn hàng:</span>
+              <span id="order-id" class="info-value">ORDER-000000</span>
+            </div>
+          </div>
+        </section>
 
-      <h2>Mã QR thanh toán</h2>
-      <div id="payment-qr">
-        <img src="qr.jpg" alt="Mã QR thanh toán" />
-        <p>Quét mã QR để chuyển tiền vào tài khoản của chủ bãi đỗ xe.</p>
-      </div>
-      <h2>Thông tin tài khoản</h2>
-      <p><strong>Tên chủ tài khoản:</strong> Nguyễn Văn A</p>
-      <p><strong>Số tài khoản:</strong> 123456789</p>
-      <p><strong>Ngân hàng:</strong> Vietcombank</p>
-      <button onclick="location.href='orientation.html'">
-        Hoàn tất thanh toán
-      </button>
-    </section>
+        <section class="payment-method">
+          <h2 class="section-title">Phương thức thanh toán</h2>
+          <div id="qr-container" class="qr-wrapper">
+            <img src="qr.jpg" alt="QR Code MoMo" class="qr-code" />
+            <p id="payment-status" class="qr-note">Vui lòng quét mã QR để thanh toán</p>
+          </div>
+        </section>
+
+        <section class="account-info">
+          <h2 class="section-title">Thông tin tài khoản</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Tên chủ tài khoản:</span>
+              <span class="info-value">Nguyễn Văn A</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Số tài khoản:</span>
+              <span class="info-value">123456789</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Ngân hàng:</span>
+              <span class="info-value">Vietcombank</span>
+            </div>
+          </div>
+        </section>
+
+        <button class="payment-button" onclick="location.href='orientation.html'">
+          Hoàn tất thanh toán
+        </button>
+      </main>
+    </div>
+
     <script>
-      // Lấy thông tin đặt chỗ từ localStorage
+      // Giữ nguyên phần JavaScript gốc
       const bookingInfo = JSON.parse(localStorage.getItem("bookingInfo"));
 
       if (bookingInfo) {
-        // Hiển thị thông tin đơn hàng
         document.getElementById("booking-lot").textContent = bookingInfo.lot;
         document.getElementById("booking-time").textContent =
           bookingInfo.bookingTime;
         document.getElementById("return-time").textContent =
           bookingInfo.returnTime;
 
-        // Tính số giờ đặt chỗ
         const bookingTime = new Date(bookingInfo.bookingTime);
         const returnTime = new Date(bookingInfo.returnTime);
-        const hours = Math.ceil((returnTime - bookingTime) / (1000 * 60 * 60)); // Tính số giờ
+        const hours = Math.ceil((returnTime - bookingTime) / (1000 * 60 * 60));
         document.getElementById("booking-hours").textContent = hours;
 
-        // Tính số tiền thanh toán (20,000đ/giờ)
-        const paymentAmount = hours * 20000; // 20,000đ/giờ
+        const paymentAmount = hours * 20000;
         document.getElementById(
           "payment-amount"
         ).textContent = `${paymentAmount.toLocaleString()} VND`;
 
-        // Tạo mã đơn hàng tự động
         const orderId = `ORDER-${Math.floor(Math.random() * 1000000)}`;
         document.getElementById("order-id").textContent = orderId;
 
-        // Lưu thông tin thanh toán vào localStorage
         const paymentInfo = {
           lot: bookingInfo.lot,
           bookingTime: bookingInfo.bookingTime,
