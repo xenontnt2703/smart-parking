@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="dashboard-page">
+    <div class="dashboard-container">
+      <h1>Smart Parking</h1>
+      
+      <div class="dashboard-card">
+        <h2>Thông tin thẻ RFID</h2>
+        <div class="info-item">
+          <span class="info-label">ID RFID:</span>
+          <span id="rfid_id" class="info-value">Đang tải...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Biển số xe:</span>
+          <span id="plate" class="info-value">Đang tải...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Thời hạn thẻ:</span>
+          <span id="expiration" class="info-value">Đang tải...</span>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button id="renew" class="primary-button">Gia hạn thẻ</button>
+        <button id="book" class="primary-button">Đặt chỗ ngay</button>
+        <button id="logout" class="secondary-button">Đăng xuất</button>
+      </div>
+
+    <script type="module">
+      import { auth, database } from "./firebase-config.js";
+      import {
+        ref,
+        get,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+      import { signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          const userRef = ref(database, "users/" + user.uid);
+          const snapshot = await get(userRef);
+
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            document.getElementById("rfid_id").textContent = userData.rfid_id;
+            document.getElementById("plate").textContent =
+              userData.plate || "Chưa cập nhật";
+            
+            if (userData.expiration) {
+              const expDate = new Date(parseInt(userData.expiration));
+              document.getElementById("expiration").textContent = 
+                expDate.toLocaleDateString() + " " + expDate.toLocaleTimeString();
+            } else {
+              document.getElementById("expiration").textContent = "Chưa gia hạn";
+            }
+
+            // Hiển thị lịch sử đặt chỗ nếu có
+            if (userData.bookings) {
+              displayBookingHistory(userData.bookings);
+            }
+          }
+        } else {
+          window.location.href = "login.html";
+        }
+      });
+
+      // Hàm hiển thị lịch sử đặt chỗ
+      function displayBookingHistory(bookings) {
+        const historyList = document.getElementById("history-list");
+        historyList.innerHTML = '';
+
+        if (Object.keys(bookings).length === 0) {
+          historyList.innerHTML = '<p class="no-history">Chưa có lịch sử đặt chỗ</p>';
+          return;
+        }
+
+        for (const [key, booking] of Object.entries(bookings)) {
+          const bookingItem = document.createElement('div');
+          bookingItem.className = 'history-item';
+          bookingItem.innerHTML = `
+            <p><strong>Bãi xe:</strong> ${booking.lot}</p>
+            <p><strong>Thời gian đặt:</strong> ${new Date(booking.bookingTime).toLocaleString()}</p>
+            <p><strong>Thời gian trả:</strong> ${new Date(booking.returnTime).toLocaleString()}</p>
+            <p><strong>Trạng thái:</strong> ${booking.status || 'Đã hoàn thành'}</p>
+          `;
+          historyList.appendChild(bookingItem);
+        }
+      }
+
+      document.getElementById("renew").addEventListener("click", () => {
+        window.location.href = "renew.html";
+      });
+
+      document.getElementById("book").addEventListener("click", () => {
+        window.location.href = "booking.html";
+      });
+
+      document.getElementById("logout").addEventListener("click", async () => {
+        await signOut(auth);
+        window.location.href = "index.html";
+      });
+    </script>
+  </body>
+</html>

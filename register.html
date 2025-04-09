@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-page">
+    <div class="login-container">
+      <h2>Đăng ký tài khoản</h2>
+      <form class="login-form" id="registerForm">
+        <div class="form-group">
+          <input type="text" id="email" placeholder="Email" required />
+        </div>
+        <div class="form-group">
+          <input
+            type="password"
+            id="password"
+            placeholder="Mật khẩu"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <input type="text" id="cccd" placeholder="Số CCCD" required />
+        </div>
+        <div class="form-group">
+          <input type="text" id="plate" placeholder="Biển số xe" required />
+        </div>
+        <button type="submit">Đăng ký</button>
+      </form>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module">
+      import { auth, database } from "./firebase-config.js";
+      import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+      import {
+        ref,
+        set,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          console.log("Nút Đăng ký đã được bấm!");
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const cccd = document.getElementById("cccd").value;
+          const plate = document.getElementById("plate").value;
+
+          if (!email || !password || !cccd || !plate) {
+            alert("Vui lòng nhập đầy đủ thông tin!");
+            return;
+          }
+
+          try {
+            console.log("Bắt đầu đăng ký...");
+            const userCredential = await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            const user = userCredential.user;
+            console.log("Đăng ký thành công:", user);
+
+            // Tạo RFID ID tự động
+            const rfid_id =
+              "RFID" + Math.floor(100000 + Math.random() * 900000);
+            console.log("RFID cấp phát:", rfid_id);
+
+            // Lưu thông tin vào Firebase Database
+            await set(ref(database, "users/" + user.uid), {
+              email: email,
+              rfid_id: rfid_id,
+              cccd: cccd,
+              plate: plate,
+            });
+
+            alert(
+              `Đăng ký thành công!\nRFID: ${rfid_id}\nCCCD: ${cccd}\nBiển số xe: ${plate}`
+            );
+            window.location.href = "login.html"; // Chuyển hướng về trang đăng nhập
+          } catch (error) {
+            console.error("Lỗi đăng ký:", error.code, error.message);
+            alert("Đăng ký thất bại: " + error.message);
+          }
+        });
+    </script>
+  </body>
+</html>
