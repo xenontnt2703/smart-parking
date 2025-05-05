@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking - Thanh toán thành công</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="orientation-page">
+    <div class="orientation-container">
+        <header class="success-header">
+            <h1>Thanh Toán Thành Công!</h1>
+            <p class="success-subtitle">Cảm ơn bạn đã sử dụng dịch vụ</p>
+        </header>
+
+        <main class="content-section">
+            <section class="history-section">
+                <h2>Lịch sử giao dịch</h2>
+                <ul id="transaction-history" class="history-list">
+                    <!-- Nội dung sẽ được thêm bằng JavaScript -->
+                </ul>
+            </section>
+
+            <button class="home-btn" onclick="location.href='dashboard.html'">
+                Quay lại trang chủ
+            </button>
+        </main>
+    </div>
+
+    <script>
+        // Giữ nguyên phần JavaScript gốc
+        const transactionHistory = document.getElementById('transaction-history');
+        const savedHistory = JSON.parse(localStorage.getItem('transactionHistory')) || [];
+
+        const paymentInfo = JSON.parse(localStorage.getItem('paymentInfo'));
+        if (paymentInfo) {
+            const transactionItem = document.createElement('li');
+            transactionItem.className = 'history-item';
+            transactionItem.innerHTML = `
+                <div class="history-detail">
+                    <span class="detail-label">Mã đơn hàng:</span>
+                    <span>${paymentInfo.orderId}</span>
+                </div>
+                <div class="history-detail">
+                    <span class="detail-label">Chỗ đặt:</span>
+                    <span>${paymentInfo.lot}</span>
+                </div>
+                <div class="history-detail">
+                    <span class="detail-label">Thời gian:</span>
+                    <span>${new Date(paymentInfo.bookingTime).toLocaleString()} - ${new Date(paymentInfo.returnTime).toLocaleString()}</span>
+                </div>
+                <div class="history-detail highlight">
+                    <span class="detail-label">Số tiền:</span>
+                    <span>${paymentInfo.amount.toLocaleString()} VND (${paymentInfo.hours} giờ)</span>
+                </div>
+            `;
+            transactionHistory.appendChild(transactionItem);
+
+            savedHistory.push({
+                orderId: paymentInfo.orderId,
+                lot: paymentInfo.lot,
+                bookingTime: paymentInfo.bookingTime,
+                returnTime: paymentInfo.returnTime,
+                hours: paymentInfo.hours,
+                amount: paymentInfo.amount
+            });
+            localStorage.setItem('transactionHistory', JSON.stringify(savedHistory));
+        }
+    </script>
+</body>
+</html>
