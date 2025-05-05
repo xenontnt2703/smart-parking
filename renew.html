@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gia hạn thẻ</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .qr-container {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .qr-image {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+        display: block;
+      }
+      .payment-info {
+        margin-top: 15px;
+        text-align: left;
+        padding: 10px;
+        background: #fff;
+        border-radius: 5px;
+      }
+      .payment-info p {
+        margin: 5px 0;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body class="renew-page">
+    <div class="renew-container">
+      <h1>Gia hạn thẻ RFID</h1>
+
+      <div class="renew-card">
+        <div class="form-group">
+          <label for="duration">Chọn thời gian gia hạn:</label>
+          <select id="duration" class="form-select">
+            <option value="1">1 tháng - 2,000 VND</option>
+            <option value="3">3 tháng - 6,000 VND</option>
+            <option value="6">6 tháng - 12,000 VND</option>
+          </select>
+        </div>
+
+        <button id="renew" class="primary-button">Thanh toán</button>
+
+        <div id="qr-container" class="qr-container" style="display: none">
+          <h3>Quét mã QR để thanh toán</h3>
+          <img id="dynamic-qr" src="" alt="QR Code" class="qr-image" />
+          <div class="payment-info">
+            <p id="paid_content"></p>
+            <p id="paid_price"></p>
+            <p id="bank_info"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      const CHECK_PAYMENT_URL =
+        "https://script.google.com/macros/s/AKfycbxtoWp05xC4IKg2yYzVWiDtIWIBK2ShOo-5Y1RJD5_BOYyXgpFUkrC750JLWpP9JbKevQ/exec";
+
+      const MY_BANK = {
+        BANK_ID: "MBBank",
+        ACCOUNT_NO: "0914422738",
+        ACCOUNT_NAME: "VO GIA HUAN",
+      };
+
+      import { auth, database } from "./firebase-config.js";
+      import {
+        ref,
+        get,
+        update,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+      // Gán biến toàn cục để checkPayment truy cập được
+      let lastContent = "";
+      let lastPrice = 0;
+
+      function cleanText(str) {
+        return str.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      }
+
+      async function checkPayment(price, content) {
+        try {
+          const response = await fetch(CHECK_PAYMENT_URL);
+          const data = await response.json();
+          const lastPaid = data.data[data.data.length - 1];
+          lastPrice = lastPaid["Giá trị"];
+          lastContent = lastPaid["Mô tả"];
+          console.log("Giá trị thanh toán:", lastPrice);
+          console.log("Nội dung mô tả:", lastContent);
+          console.log("So sánh:", content, "có trong", lastContent);
+
+          const isMatch = cleanText(lastContent).includes(cleanText(content));
+
+          if (lastPrice >= price && isMatch) {
+            alert("Đã xác nhận thanh toán thành công!");
+            return true;
+          } else {
+            console.log("Chưa xác nhận thanh toán.");
+            return false;
+          }
+        } catch (error) {
+          console.error("Lỗi khi kiểm tra thanh toán.", error);
+          return false;
+        }
+      }
+
+      document.getElementById("renew").addEventListener("click", async () => {
+        const duration = parseInt(document.getElementById("duration").value);
+        const amount = duration * 2000;
+        const orderId = `RENEW-${Math.floor(Math.random() * 1000000)}`;
+
+        const QR_URL = `https://img.vietqr.io/image/${MY_BANK.BANK_ID}-${
+          MY_BANK.ACCOUNT_NO
+        }-qr_only.jpg?amount=${amount}&addInfo=${encodeURIComponent(
+          orderId
+        )}&accountName=${encodeURIComponent(MY_BANK.ACCOUNT_NAME)}`;
+
+        document.getElementById("dynamic-qr").src = QR_URL;
+        document.getElementById(
+          "paid_content"
+        ).textContent = `Nội dung CK: ${orderId}`;
+        document.getElementById(
+          "paid_price"
+        ).textContent = `Số tiền: ${amount.toLocaleString()} VND`;
+        document.getElementById(
+          "bank_info"
+        ).textContent = `Ngân hàng: ${MY_BANK.BANK_ID.toUpperCase()} - ${
+          MY_BANK.ACCOUNT_NO
+        }`;
+        document.getElementById("qr-container").style.display = "block";
+
+        // Đợi người dùng thanh toán rồi mới kiểm tra
+        setTimeout(async () => {
+          const paid = await checkPayment(amount, orderId);
+          if (!paid) {
+            alert(
+              "Chưa xác nhận được thanh toán. Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
+            );
+            return;
+          }
+
+          const user = auth.currentUser;
+          if (user) {
+            const userRef = ref(database, "users/" + user.uid);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists()) {
+              const userData = snapshot.val();
+              const currentExpiration = userData.expiration || Date.now();
+              const newExpiration =
+                currentExpiration + duration * 30 * 24 * 60 * 60 * 1000;
+
+              await update(userRef, {
+                expiration: newExpiration,
+                last_payment: {
+                  amount,
+                  date: Date.now(),
+                  orderId,
+                  bankInfo: MY_BANK,
+                  qrUrl: QR_URL,
+                },
+              });
+
+              const rfidRef = ref(database, "rfid_data");
+              const rfidSnapshot = await get(rfidRef);
+              if (rfidSnapshot.exists()) {
+                const rfidData = rfidSnapshot.val();
+                for (const rfid in rfidData) {
+                  if (rfidData[rfid].user_id === user.uid) {
+                    await update(ref(database, `rfid_data/${rfid}`), {
+                      expiration: newExpiration,
+                    });
+                    console.log("Đã cập nhật expiration cho RFID:", rfid);
+                  }
+                }
+              }
+
+              alert(
+                `Gia hạn thành công! Thời hạn mới: ${new Date(
+                  newExpiration
+                ).toLocaleDateString()}`
+              );
+              window.location.href = "dashboard.html";
+            }
+          }
+        }, 40000); // đợi 60s (có thể chỉnh lại nếu muốn nhanh hơn)
+      });
+    </script>
+  </body>
+</html>
