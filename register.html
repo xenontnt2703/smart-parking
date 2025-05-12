@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-page">
+    <div class="login-container">
+      <h2>Đăng ký tài khoản</h2>
+      <form class="login-form" id="registerForm">
+        <div class="form-group">
+          <input type="text" id="email" placeholder="Email" required />
+        </div>
+        <div class="form-group">
+          <input
+            type="password"
+            id="password"
+            placeholder="Mật khẩu"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <input type="text" id="cccd" placeholder="Số CCCD" required />
+        </div>
+        <div class="form-group">
+          <input type="text" id="plate" placeholder="Biển số xe" required />
+        </div>
+        <button type="submit">Đăng ký</button>
+      </form>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module">
+      import { auth, database } from "./firebase-config.js";
+      import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+      import {
+        ref,
+        set,
+        get,
+        update,
+        child,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const cccd = document.getElementById("cccd").value;
+          const plate = document.getElementById("plate").value;
+
+          if (!email || !password || !cccd || !plate) {
+            alert("Vui lòng nhập đầy đủ thông tin!");
+            return;
+          }
+
+          try {
+            const userCredential = await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            const user = userCredential.user;
+
+            // ✅ Lấy danh sách RFID từ Firebase
+            const rfidSnapshot = await get(ref(database, "rfid_data"));
+            const rfidData = rfidSnapshot.val();
+
+            let assignedRfid = null;
+
+            // ✅ Duyệt để tìm RFID chưa có user_id hoặc plate
+            for (const [rfidId, info] of Object.entries(rfidData)) {
+              if (!info.user_id && !info.plate) {
+                assignedRfid = rfidId;
+                break;
+              }
+            }
+
+            if (!assignedRfid) {
+              alert("Không còn RFID khả dụng. Vui lòng liên hệ quản lý.");
+              return;
+            }
+
+            // ✅ Cập nhật thông tin user vào cả /users và /rfid_data
+            const updates = {};
+updates["users/" + user.uid] = {
+              email,
+              rfid_id: assignedRfid,
+              cccd,
+              plate,
+            };
+            updates["rfid_data/" + assignedRfid + "/user_id"] = user.uid;
+            updates["rfid_data/" + assignedRfid + "/plate"] = plate;
+            updates["rfid_data/" + assignedRfid + "/expiration"] =
+              Date.now() + 30 * 24 * 60 * 60 * 1000; // mặc định 1 tháng
+
+            await update(ref(database), updates);
+
+            alert(`Đăng ký thành công!\nRFID được cấp: ${assignedRfid}`);
+            window.location.href = "login.html";
+          } catch (error) {
+            console.error("Lỗi đăng ký:", error.code, error.message);
+            alert("Đăng ký thất bại: " + error.message);
+          }
+        });
+    </script>
+  </body>
+</html>
